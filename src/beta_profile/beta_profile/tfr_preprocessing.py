@@ -19,6 +19,24 @@ LFP_GROUPS = {
     "Right": ["RingR", "SegmIntraR", "SegmInterR"],
     "Left": ["RingL", "SegmIntraL", "SegmInterL"],
 }
+CHANNELNAMES_MAPPING = {
+    "LFP_Stn_0_3_": "03",
+    "LFP_Stn_1_3_": "13",
+    "LFP_Stn_0_2_": "02",
+    "LFP_Stn_1_2_": "12",
+    "LFP_Stn_0_1_": "01",
+    "LFP_Stn_2_3_": "23",
+    "LFP_Stn_1_A_1_B_": "1A1B",
+    "LFP_Stn_1_A_1_C_": "1A1C",
+    "LFP_Stn_1_B_1_C_": "1B1C",
+    "LFP_Stn_2_A_2_B_": "2A2B",
+    "LFP_Stn_2_A_2_C_": "2A2C",
+    "LFP_Stn_2_B_2_C_": "2B2C",
+    "LFP_Stn_1_A_2_A_": "1A2A",
+    "LFP_Stn_1_B_2_B_": "1B2B",
+    "LFP_Stn_1_C_2_C_": "1C2C",
+}
+
 
 PICK_CHANNELS = {
     "Ring": ["01", "12", "23", "02", "13", "03"],
@@ -140,9 +158,17 @@ def pick_channels_of_interest(
     structured_signals_dataframe = pd.DataFrame()
 
     # load the MNE object
-    mne_object = io.extract_data_from_py_perceive(
-        sub=sub, session=session, condition=condition, hemisphere=hemisphere
+    # mne_object = io.extract_data_from_py_perceive(
+    #     sub=sub, session=session, condition=condition, hemisphere=hemisphere
+    # )
+    mne_object = io.load_neuro_cure_object(
+        sub=sub,
+        session=session,
+        condition=condition,
+        modality="survey",
+        hemisphere=hemisphere,
     )
+    mne_object = mne_object["lfp_group_data"]
 
     for group in LFP_GROUPS[hemisphere]:
 
@@ -153,6 +179,13 @@ def pick_channels_of_interest(
             ring_or_segm = "Segm"
 
         lfp_data = mne_object[group]
+
+        # rename channels
+        for old_name in lfp_data.info.ch_names:
+            for key, value in CHANNELNAMES_MAPPING.items():
+                if key in old_name:
+                    new_name = value
+                    lfp_data.rename_channels({old_name: new_name})
 
         # get new channel names
         ch_names = lfp_data.info.ch_names

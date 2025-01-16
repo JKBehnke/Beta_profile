@@ -32,13 +32,13 @@ PICK_CHANNELS = {
     "Segm": ["1A1B", "1A1C", "1B1C", "2A2B", "2A2C", "2B2C", "1A2A", "1B2B", "1C2C"],
 }
 
-SESSION_FILENAME = {
-    "fu3m": "3MFU",
-    "fu12m": "12MFU",
-    "fu18m": "18MFU",
-    "fu24m": "24MFU",
-    "fu36m": "36MFU",
-}
+# SESSION_FILENAME = {
+#     "fu3m": "3MFU",
+#     "fu12m": "12MFU",
+#     "fu18m": "18MFU",
+#     "fu24m": "24MFU",
+#     "fu36m": "36MFU",
+# }
 
 CONDITION_FILENAME = {
     "m0s0": "MedOFF-StimOFF",
@@ -76,7 +76,7 @@ def plot_power_spectra(sub: str, session: str, condition: str, hemisphere: str):
         # ax.grid()
 
         fig.suptitle(
-            f"Power Spectra {hemisphere} hemisphere ({group}), \n{SESSION_FILENAME[session]}, {CONDITION_FILENAME[condition]}",
+            f"Power Spectra {hemisphere} hemisphere ({group}), \n{session}, {CONDITION_FILENAME[condition]}",
             ha="center",
             fontsize=20,
         )
