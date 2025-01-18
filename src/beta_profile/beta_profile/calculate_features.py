@@ -88,11 +88,20 @@ def calculate_peak_4Hz_power_around_CF(max_Ring_peak_CF=None, f=None, psd=None):
     return np.mean(psd[index_low_cut:index_high_cut])
 
 
-def write_beta_profile(sub: str, session: str, condition: str, beta_range: str):
+def write_beta_profile(
+    sub: str,
+    session: str,
+    condition: str,
+    beta_range: str,
+    sub_folder: str = None,
+    cleaned_data: pd.DataFrame = None,
+):
     """
     Input:
         beta_range: "beta", "low_beta", "high_beta" -> always start with "beta",
             -> use high beta e.g. in case the "higest peak" is at the border 13 Hz, but an actual peak is visible in higher freq ranges
+
+        - sub_folder: e.g."clean", "raw" -> if "yes" the data will be saved into a ecg folder in the subject folder,
 
     1) for Ring and Segm channels separately
     2) Rank channels by peak_4Hz_power within beta 13-35 Hz
@@ -116,6 +125,14 @@ def write_beta_profile(sub: str, session: str, condition: str, beta_range: str):
         load_peak_details = tfr_preprocessing.main_tfr(
             sub=sub, session=session, condition=condition, hemisphere=hem
         )
+
+        clean_mark = ""
+
+        if cleaned_data is not None:
+            load_peak_details = tfr_preprocessing.main_tfr_clean_data(
+                cleaned_data=cleaned_data
+            )
+            clean_mark = "_cleaned"
 
         peak_details = load_peak_details[0]
         LFP_data = load_peak_details[1]
@@ -188,11 +205,20 @@ def write_beta_profile(sub: str, session: str, condition: str, beta_range: str):
             beta_result_to_excel[f"{hem}_{group}"] = beta_profile_all_copy
 
     # save as excel file
-    io.save_df_to_excel_sheets(
-        sub=sub,
-        filename=f"{beta_range}_profile_{session}_{condition}",
-        file=beta_result_to_excel,
-    )
+    if sub_folder:
+        io.save_df_to_excel_sheets(
+            sub=sub,
+            filename=f"{beta_range}_profile_{session}_{condition}{clean_mark}",
+            file=beta_result_to_excel,
+            sub_folder=sub_folder,
+        )
+
+    else:
+        io.save_df_to_excel_sheets(
+            sub=sub,
+            filename=f"{beta_range}_profile_{session}_{condition}{clean_mark}",
+            file=beta_result_to_excel,
+        )
 
     return beta_result_to_excel
 

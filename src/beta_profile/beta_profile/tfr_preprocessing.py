@@ -446,3 +446,90 @@ def main_tfr(sub: str, session: str, condition: str, hemisphere: str):
             )
 
     return beta_profile, lfp_psd_data
+
+
+def main_tfr_clean_data(cleaned_data: pd.DataFrame):
+    """
+    Take cleaned time series as input and perform the TFR analysis
+    The cleaned data Dataframe is a result from the function ecg_artifact_df, clean_time_series_df = time_series.ecg_cleaning()
+    This dataframe contains per channel group (Ring, SegmInter, SegmIntra) the "cleaned_time_series" and "channels" in two separate columns
+
+    1) Load all relevant Ring and Segm BSSU time series
+    2) Band-pass filter 5-95 Hz
+    3) Fourier Transform to obtain Spectral power: 1sec window length, 50% window overlap
+    4) Extract features within beta, low beta and high beta:
+        - average power in freq band
+        - highest peak CF and peak power
+
+    """
+
+    beta_profile = pd.DataFrame()
+    lfp_psd_data = pd.DataFrame()
+
+    # for each channel, perform the further pre-processing
+    for group in ["Ring", "SegmInter", "SegmIntra"]:
+
+        group_data = cleaned_data.loc[cleaned_data["channel_group"] == group]
+        cleaned_time_series = group_data["cleaned_time_series"].values[0]
+        channels = group_data["channels"].values[0]
+
+        for i, ch in enumerate(channels):
+
+            # get the LFP from the channel
+            ch_lfp = cleaned_time_series[i]
+
+            filtered_signal = band_pass_filter(ch_lfp)
+
+            fourier_transformed_lfp = fourier_transform(filtered_signal)
+
+            f = fourier_transformed_lfp["freq"]
+            psd = fourier_transformed_lfp["average_Sxx"]
+
+            lfp_per_ch = {
+                "channel": [ch],
+                "unfiltered_lfp": [ch_lfp],
+                "filtered_lfp": [filtered_signal],
+                "frequencies": [f],
+                "filtered_psd": [psd],
+            }
+
+            lfp_per_ch_df = pd.DataFrame(lfp_per_ch)
+            lfp_psd_data = pd.concat([lfp_psd_data, lfp_per_ch_df], ignore_index=True)
+
+            # extract power average in frequencies
+            power_average = power_average_in_freq(f=f, psd=psd)
+
+            # extract peak parameters
+            all_peaks = peak_detection(psd=psd, f=f)
+
+            for range in BETA_RANGES:
+
+                power_av_in_range = power_average[range]
+                peak_details_in_range = all_peaks.loc[all_peaks["f_range"] == range]
+
+                # check if peaks exist
+                if len(peak_details_in_range["peak_CF"].values) == 0:
+                    peak_CF = None
+                    peak_power = None
+                    peak_4Hz_power = None
+
+                else:
+                    peak_CF = peak_details_in_range["peak_CF"].values[0]
+                    peak_power = peak_details_in_range["peak_power"].values[0]
+                    peak_4Hz_power = peak_details_in_range["peak_4Hz_power"].values[0]
+
+                beta_profile_per_ch_range = {
+                    "channel": [ch],
+                    "f_range": [range],
+                    "power_in_f_range": [power_av_in_range],
+                    "peak_CF": [peak_CF],
+                    "peak_power": [peak_power],
+                    "peak_4Hz_power": [peak_4Hz_power],
+                }
+
+                single_beta_profile = pd.DataFrame(beta_profile_per_ch_range)
+                beta_profile = pd.concat(
+                    [beta_profile, single_beta_profile], ignore_index=True
+                )
+
+    return beta_profile, lfp_psd_data

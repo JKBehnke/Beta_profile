@@ -2,6 +2,7 @@
 
 import matplotlib.pyplot as plt
 from cycler import cycler
+import pandas as pd
 
 from ..utils import find_folders as find_folders
 from ..utils import io as io
@@ -48,11 +49,22 @@ CONDITION_FILENAME = {
 }
 
 
-def plot_power_spectra(sub: str, session: str, condition: str, hemisphere: str):
+def plot_power_spectra(
+    sub: str,
+    session: str,
+    condition: str,
+    hemisphere: str,
+    sub_folder: str = None,
+    cleaned_data: pd.DataFrame = None,
+):
     """
     Plot Power spectra of band-pass filtered LFP in 2 separate plots:
         - Ring Plot
         - Segm Plot
+
+    Input:
+    - sub_folder: e.g."ecg_cleaning", "clean", "raw" -> if "yes" the data will be saved into a ecg folder in the subject folder,
+                        otherwise it will be saved in the subject folder directly
 
     """
     # load psd
@@ -60,8 +72,16 @@ def plot_power_spectra(sub: str, session: str, condition: str, hemisphere: str):
         sub=sub, session=session, condition=condition, hemisphere=hemisphere
     )
 
+    clean_mark = ""
+
+    if cleaned_data is not None:
+        beta_profile = tfr_preprocessing.main_tfr_clean_data(cleaned_data=cleaned_data)
+        clean_mark = "_cleaned"
+
     peak_details = beta_profile[0]
     power_details = beta_profile[1]
+
+    fig_output = {}
 
     # plot separately Ring and Segm
     ch_group = ["Ring_neighbours", "Ring_sandwich", "Segm"]
@@ -130,10 +150,25 @@ def plot_power_spectra(sub: str, session: str, condition: str, hemisphere: str):
         legend.get_frame().set_facecolor("white")
 
         fig.tight_layout()
+        plt.show(block=False)
+        fig_output[group] = fig
 
         # save figure
-        io.save_fig_jpeg(
-            sub=sub,
-            filename=f"Power_Spectra_sub-{sub}_hem-{hemisphere}_ses-{session}_cond-{condition}_group-{group}",
-            figure=fig,
-        )
+        # if sub_folder is given, save the figure in the sub_folder
+        if sub_folder:
+            # find the path to the results folder
+            io.save_fig_jpeg(
+                sub=sub,
+                filename=f"Power_Spectra_sub-{sub}_hem-{hemisphere}_ses-{session}_cond-{condition}_group-{group}{clean_mark}",
+                figure=fig,
+                sub_folder=sub_folder,
+            )
+
+        else:
+            io.save_fig_jpeg(
+                sub=sub,
+                filename=f"Power_Spectra_sub-{sub}_hem-{hemisphere}_ses-{session}_cond-{condition}_group-{group}{clean_mark}",
+                figure=fig,
+            )
+
+    return fig_output

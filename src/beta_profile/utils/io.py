@@ -22,7 +22,7 @@ RUNS = ["run-1", "run-2", "run-3", "run-4"]
 def load_sub_path(sub: str):
     """
     Loading the path to the diectory:
-        - Percept_Data_structured/beta_data/sub-XXX
+        - Percept_Data_structured/beta_mapping_project/sub-XXX
 
     Input:
         - sub: "024"
@@ -262,15 +262,22 @@ def extract_data_from_py_perceive(
     return lfp_group_data
 
 
-def save_fig_jpeg(sub: str, filename: str, figure=None):
+def save_fig_jpeg(sub: str, filename: str, figure=None, sub_folder: str = None):
     """
     Input:
-        - path: str
+        - sub: str, e.g. "029"
         - filename: str
         - figure: must be a plt figure
+        - sub_folder: str e.g. "clean", "raw"
 
     """
     path = check_or_create_sub_path(sub=sub)
+
+    if sub_folder:
+        path = os.path.join(path, sub_folder)
+
+        if not os.path.exists(path):
+            os.makedirs(path)
 
     figure.savefig(
         os.path.join(path, f"{filename}.jpg"),
@@ -291,11 +298,23 @@ def save_df_as_excel(sub: str, filename: str, file: pd.DataFrame, sheet_name: st
     file.to_excel(filepath, sheet_name=sheet_name, index=False)
 
 
-def save_df_to_excel_sheets(sub: str, filename: str, file: dict):
-    """ """
+def save_df_to_excel_sheets(
+    sub: str, filename: str, file: dict, sub_folder: str = None
+):
+    """
+    - sub_folder: str e.g. "clean", "raw"
+
+    """
     sheet_names = ["Right_Ring", "Right_Segm", "Left_Ring", "Left_Segm"]
 
     path = check_or_create_sub_path(sub=sub)
+
+    if sub_folder:
+        path = os.path.join(path, sub_folder)
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+
     filepath = os.path.join(path, f"{filename}.xlsx")
 
     # write each dataframe to separate Excel sheet
@@ -305,7 +324,14 @@ def save_df_to_excel_sheets(sub: str, filename: str, file: dict):
             file[sheet].to_excel(writer, sheet_name=sheet, index=False)
 
 
-def save_tfr_and_psd_to_pickle(sub: str, session: str, condition: str, hemisphere: str):
+def save_tfr_and_psd_to_pickle(
+    sub: str,
+    session: str,
+    condition: str,
+    hemisphere: str,
+    sub_folder: str = None,
+    cleaned_data: pd.DataFrame = None,
+):
     """
     Saves the TFR and PSD data as pickle files
 
@@ -315,11 +341,19 @@ def save_tfr_and_psd_to_pickle(sub: str, session: str, condition: str, hemispher
 
     # sub path
     sub_path = check_or_create_sub_path(sub=sub)
+    if sub_folder:
+        sub_path = os.path.join(sub_path, sub_folder)
+
+        if not os.path.exists(sub_path):
+            os.makedirs(sub_path)
 
     # load the data
     beta_profile = tfr.main_tfr(
         sub=sub, session=session, condition=condition, hemisphere=hemisphere
     )
+
+    if cleaned_data is not None:
+        beta_profile = tfr.main_tfr_clean_data(cleaned_data=cleaned_data)
 
     # save the data as pickle files
     beta_profile[0].to_pickle(
