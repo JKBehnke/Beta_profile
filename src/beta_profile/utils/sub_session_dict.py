@@ -73,7 +73,7 @@ sub_sessions_dict = {
     # "102": ["Fu02m"], #fehlt
     "105": ["Fu02m"],
     "106": ["Fu03m"],
-    "108": ["Fu03m"],
+    "108": ["Fu03m"],  # key error RingL
     # "110": ["Fu12m"], #fehlt
     # "112": ["Fu12m"], #fehlt
     "114": ["Fu03m"],
